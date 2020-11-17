@@ -23,7 +23,8 @@ use moneymarket::{
 };
 
 /// # of blocks per epoch period
-const EPOCH_PERIOD: u64 = 86400u64;
+// const EPOCH_PERIOD: u64 = 86400u64;
+const EPOCH_PERIOD: u64 = 60u64;
 
 pub fn init<S: Storage, A: Api, Q: Querier>(
     deps: &mut Extern<S, A, Q>,
