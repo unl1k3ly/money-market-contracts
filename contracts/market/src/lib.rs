@@ -4,8 +4,6 @@ pub mod deposit;
 pub mod querier;
 pub mod state;
 
-mod migration;
-
 #[cfg(test)]
 mod testing;
 

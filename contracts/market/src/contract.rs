@@ -3,7 +3,6 @@ use crate::borrow::{
     query_borrower_info, query_borrower_infos, repay_stable, repay_stable_from_liquidation,
 };
 use crate::deposit::{compute_exchange_rate_raw, deposit_stable, redeem_stable};
-use crate::migration::{migrate_config, migrate_state};
 use crate::querier::{query_anc_emission_rate, query_borrow_rate, query_target_deposit_rate};
 use crate::state::{read_config, read_state, store_config, store_state, Config, State};
 
@@ -518,23 +517,23 @@ pub fn query_epoch_state<S: Storage, A: Api, Q: Querier>(
 }
 
 pub fn migrate<S: Storage, A: Api, Q: Querier>(
-    deps: &mut Extern<S, A, Q>,
-    env: Env,
-    msg: MigrateMsg,
+    _deps: &mut Extern<S, A, Q>,
+    _env: Env,
+    _msg: MigrateMsg,
 ) -> MigrateResult {
     // migrate config to use new Config
     // also update collector_contract to the given address
-    migrate_config(
-        &mut deps.storage,
-        deps.api.canonical_address(&msg.collector_contract)?,
-    )?;
+    // migrate_config(
+    //     &mut deps.storage,
+    //     deps.api.canonical_address(&msg.collector_contract)?,
+    // )?;
 
-    let config: Config = read_config(&deps.storage)?;
-    let aterra_supply = query_supply(&deps, &deps.api.human_address(&config.aterra_contract)?)?;
-    let balance = query_balance(&deps, &env.contract.address, config.stable_denom)?;
+    // let config: Config = read_config(&deps.storage)?;
+    // let aterra_supply = query_supply(&deps, &deps.api.human_address(&config.aterra_contract)?)?;
+    // let balance = query_balance(&deps, &env.contract.address, config.stable_denom)?;
 
-    // migrate state to use new State
-    migrate_state(&mut deps.storage, aterra_supply, balance)?;
+    // // migrate state to use new State
+    // migrate_state(&mut deps.storage, aterra_supply, balance)?;
 
     Ok(MigrateResponse::default())
 }
