@@ -50,6 +50,16 @@
               ],
               "format": "uint64",
               "minimum": 0.0
+            },
+            "distributed_interest": {
+              "anyOf": [
+                {
+                  "$ref": "#/definitions/Uint256"
+                },
+                {
+                  "type": "null"
+                }
+              ]
             }
           }
         }
@@ -116,6 +126,9 @@
   ],
   "definitions": {
     "HumanAddr": {
+      "type": "string"
+    },
+    "Uint256": {
       "type": "string"
     }
   }
