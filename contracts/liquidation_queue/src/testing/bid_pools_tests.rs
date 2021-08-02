@@ -1131,6 +1131,7 @@ fn two_bidder_reward_distribution_common_slot() {
         liquidation_threshold: Uint256::from(100000000u64),
         price_timeframe: 101u64,
         waiting_period: 60u64,
+        overseer: HumanAddr::from("overseer0000"),
     };
 
     // 10 ust/col
@@ -1295,7 +1296,8 @@ fn two_bidder_distribution_multiple_common_slots() {
         bid_fee: Decimal256::percent(1),
         liquidation_threshold: Uint256::from(100000000u64),
         price_timeframe: 60u64, 
-        waiting_period: 60u64 
+        waiting_period: 60u64,
+        overseer: HumanAddr::from("overseer0000"),
     };
 
     let env = mock_env("addr0000", &[]); 
@@ -1600,6 +1602,7 @@ fn two_bidder_unequal_deposit_reward_distribution() {
         liquidation_threshold: Uint256::from(100000000u64),
         price_timeframe: 101u64,
         waiting_period: 60u64,
+        overseer: HumanAddr::from("overseer0000"),
     };
 
     // 2 ust/col
@@ -1771,7 +1774,8 @@ fn scalable_reward_distribution_after_multiple_liquidations() {
         bid_fee: Decimal256::percent(1),
         liquidation_threshold: Uint256::from(100000000u64),
         price_timeframe: 60u64,
-        waiting_period: 60u64 
+        waiting_period: 60u64,
+        overseer: HumanAddr::from("overseer0000"),
     };
 
     let env = mock_env("addr0000", &[]); 
@@ -2013,6 +2017,7 @@ fn not_enough_bid_for_collateral() {
         liquidation_threshold: Uint256::from(100000000u64),
         price_timeframe: 101u64,
         waiting_period: 60u64,
+        overseer: HumanAddr::from("overseer0000"),
     };
 
     let env = mock_env("addr0000", &[]);
@@ -2119,6 +2124,7 @@ fn two_bidder_reward_distribution_common_slot_large_numbers() {
         liquidation_threshold: Uint256::from(100000000u64),
         price_timeframe: 101u64,
         waiting_period: 60u64,
+        overseer: HumanAddr::from("overseer0000"),
     };
 
     // 1000 ust/col
