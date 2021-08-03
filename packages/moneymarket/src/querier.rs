@@ -80,6 +80,16 @@ pub fn query_tax_rate<S: Storage, A: Api, Q: Querier>(
     Ok(terra_querier.query_tax_rate()?.rate.into())
 }
 
+pub fn query_tax_rate_and_cap<S: Storage, A: Api, Q: Querier>(
+    deps: &Extern<S, A, Q>,
+    denom: String,
+) -> StdResult<(Decimal256, Uint256)> {
+    let terra_querier = TerraQuerier::new(&deps.querier);
+    let rate = terra_querier.query_tax_rate()?.rate;
+    let cap = terra_querier.query_tax_cap(denom)?.cap;
+    Ok((rate.into(), cap.into()))
+}
+
 pub fn compute_tax<S: Storage, A: Api, Q: Querier>(
     deps: &Extern<S, A, Q>,
     coin: &Coin,

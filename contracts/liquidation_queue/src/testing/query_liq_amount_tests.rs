@@ -507,12 +507,12 @@ fn partial_one_collateral_two_slots_with_fees() {
 
     // 44453 col liq
     // remaining = 200000 - 44453 = 155,547
-    // new limit = 155,547 * 0.1 * 0.5 = 7777
-    // safe = 7777 * 0.8 = 6221 ****
+    // new limit = 155,547 * 0.1 * 0.5 = 7,777
+    // safe = 7,777 * 0.8 = 6,221 ****
 
     // repay amount = 4076
 
-    // new borrow amount = 10300 - 4076 = 6224 ****
+    // new borrow amount = 10300 - 4076 = 6,224 ****
 
     let env = mock_env("token0000", &[]);
     deps.querier.with_oracle_price(&[(
@@ -1035,7 +1035,7 @@ fn non_partial_liquidation_two_slots_with_fees_big_nums() {
     assert_eq!(
         res,
         LiquidationAmountResponse {
-            collaterals: vec![(HumanAddr::from("token0000"), Uint256::from(13962055441u64))],
+            collaterals: vec![(HumanAddr::from("token0000"), Uint256::from(13833067518u64))],
         }
     );
 
@@ -1047,7 +1047,7 @@ fn non_partial_liquidation_two_slots_with_fees_big_nums() {
 
     let msg = HandleMsg::Receive(Cw20ReceiveMsg {
         sender: HumanAddr::from("addr0001"),
-        amount: Uint128::from(13962055441u64),
+        amount: Uint128::from(13833067518u64),
         msg: Some(
             to_binary(&Cw20HookMsg::ExecuteBid {
                 liquidator: HumanAddr::from("liquidator00000"),
@@ -1067,7 +1067,7 @@ fn non_partial_liquidation_two_slots_with_fees_big_nums() {
                 to_address: HumanAddr::from("repay0000"),
                 amount: vec![Coin {
                     denom: "uusd".to_string(),
-                    amount: Uint128::from(1312131314u128), // 1300000000 - 1312131314 = 12,131,314 (overpayed due to tax cap being ignored) ~ 12 UST
+                    amount: Uint128::from(1300000000u128), // exact loan amount
                 }]
             }),
             CosmosMsg::Bank(BankMsg::Send {
@@ -1075,7 +1075,7 @@ fn non_partial_liquidation_two_slots_with_fees_big_nums() {
                 to_address: HumanAddr::from("fee0000"),
                 amount: vec![Coin {
                     denom: "uusd".to_string(),
-                    amount: Uint128::from(13132625u128),
+                    amount: Uint128::from(13011300u128),
                 }]
             })
         ]
@@ -2411,6 +2411,135 @@ fn not_enough_bids_for_one_of_two_col() {
                     amount: Uint128::from(2913u128),
                 }]
             })
+        ]
+    );
+}
+
+
+#[test]
+fn integration_test_simul() {
+    let mut deps = mock_dependencies(20, &[]);
+    deps.querier.with_tax(
+        Decimal::percent(1),
+        &[(&"uusd".to_string(), &Uint128::from(1000000u128))],
+    );
+    deps.querier.with_collateral_max_ltv(&[
+        (&HumanAddr::from("token0000"), &Decimal256::percent(60)),
+        (&HumanAddr::from("token0001"), &Decimal256::percent(30)),
+    ]);
+
+    let msg = InitMsg {
+        owner: HumanAddr::from("owner0000"),
+        oracle_contract: HumanAddr::from("oracle0000"),
+        stable_denom: "uusd".to_string(),
+        safe_ratio: Decimal256::percent(80),
+        bid_fee: Decimal256::percent(0),
+        liquidation_threshold: Uint256::zero(),
+        price_timeframe: 60u64,
+        waiting_period: 60u64,
+        overseer: HumanAddr::from("overseer0000"),
+    };
+
+    let env = mock_env("addr0000", &[]);
+    let _res = init(&mut deps, env, msg).unwrap();
+
+    let msg = HandleMsg::WhitelistCollateral {
+        collateral_token: HumanAddr::from("token0000"),
+        max_slot: 30u8,
+        bid_threshold: Uint256::from(100000000000000000000u128), // to get instant activation
+        premium_rate_per_slot: Decimal256::percent(1),
+    };
+    let env = mock_env("owner0000", &[]);
+    handle(&mut deps, env.clone(), msg).unwrap();
+
+    for slot in 1..30 {
+        let msg = HandleMsg::SubmitBid {
+            collateral_token: HumanAddr::from("token0000"),
+            premium_slot: slot as u8,
+        };
+        let env = mock_env(
+            "addr0000",
+            &[Coin {
+                denom: "uusd".to_string(),
+                amount: Uint128::from(300u128),
+            }],
+        );
+        handle(&mut deps, env, msg).unwrap();
+    }
+
+    let msg = HandleMsg::SubmitBid {
+        collateral_token: HumanAddr::from("token0000"),
+        premium_slot: 30u8,
+    };
+    let env = mock_env(
+        "addr0000",
+        &[Coin {
+            denom: "uusd".to_string(),
+            amount: Uint128::from(3000000000000u128),
+        }],
+    );
+    handle(&mut deps, env.clone(), msg).unwrap();
+
+    let msg = QueryMsg::LiquidationAmount {
+        borrow_amount: Uint256::from(6000000000u64),
+        borrow_limit: Uint256::from(5400000000u64),
+        collaterals: vec![
+            (HumanAddr::from("token0000"), Uint256::from(10000000000u64)), // value = 9,000,000,000 (LTV 60%) limit = 5,400,000,000
+        ],
+        collateral_prices: vec![Decimal256::percent(90)],
+    };
+
+    let res = query(&mut deps, msg).unwrap();
+    let res: LiquidationAmountResponse = from_binary(&res).unwrap();
+    assert_eq!(
+        res,
+        LiquidationAmountResponse {
+            collaterals: vec![
+                (HumanAddr::from("token0000"), Uint256::from(8489891541u64)),
+            ],
+        }
+    );
+
+    // 8489891541
+
+    // 10000000000 - 8489891541 = 1,510,108,459
+    // 1,510,108,459 * 0.9 * 0.6 * 0.8 = 652,366,854
+
+    // 6000000000 - 5347633145 = 652,366,855
+                  
+    deps.querier.with_oracle_price(&[
+        (
+            &("token0000".to_string(), "uusd".to_string()),
+            &(Decimal256::percent(90), env.block.time, env.block.time),
+        ),
+    ]);
+
+    let msg = HandleMsg::Receive(Cw20ReceiveMsg {
+        sender: HumanAddr::from("addr0001"),
+        amount: Uint128::from(8489891541u64),
+        msg: Some(
+            to_binary(&Cw20HookMsg::ExecuteBid {
+                liquidator: HumanAddr::from("liquidator00000"),
+                fee_address: Some(HumanAddr::from("fee0000")),
+                repay_address: Some(HumanAddr::from("repay0000")),
+            })
+            .unwrap(),
+        ),
+    });
+    let env = mock_env("token0000", &[]);
+    let res = handle(&mut deps, env.clone(), msg).unwrap();
+
+    assert_eq!(
+        res.messages,
+        vec![
+            CosmosMsg::Bank(BankMsg::Send {
+                from_address: HumanAddr::from(MOCK_CONTRACT_ADDR),
+                to_address: HumanAddr::from("repay0000"),
+                amount: vec![Coin {
+                    denom: "uusd".to_string(),
+                    amount: Uint128::from(5347633145u128),
+                }]
+            }),
         ]
     );
 }

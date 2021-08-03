@@ -10,7 +10,7 @@ use moneymarket::liquidation_queue::{
     BidPoolResponse, BidPoolsResponse, BidResponse, BidsResponse, CollateralInfoResponse,
     ConfigResponse, LiquidationAmountResponse,
 };
-use moneymarket::querier::query_tax_rate;
+use moneymarket::querier::query_tax_rate_and_cap;
 use moneymarket::tokens::TokensHuman;
 
 pub fn query_config<S: Storage, A: Api, Q: Querier>(
@@ -49,9 +49,6 @@ pub fn query_liquidation_amount<S: Storage, A: Api, Q: Querier>(
         });
     }
 
-    let tax_rate = query_tax_rate(&deps)?;
-    let base_fee_deductor = (Decimal256::one() - config.bid_fee) * (Decimal256::one() - tax_rate);
-
     // calculate value of all collaterals and weights
     let (collaterals_value, total_weight, collateral_weights, max_ltvs) =
         compute_collateral_weights(&deps, &overseer, &collaterals, &collateral_prices)?;
@@ -62,6 +59,17 @@ pub fn query_liquidation_amount<S: Storage, A: Api, Q: Querier>(
     } else {
         config.safe_ratio
     };
+
+    // check tax cap
+    let (mut tax_rate, tax_cap) = query_tax_rate_and_cap(&deps, config.stable_denom)?;
+    let mut tax_cap_adj = tax_cap;
+    if borrow_amount * tax_rate > tax_cap_adj {
+        tax_rate = Decimal256::zero()
+    } else {
+        tax_cap_adj = Uint256::from(1u128)
+    }
+
+    let base_fee_deductor = (Decimal256::one() - config.bid_fee) * (Decimal256::one() - tax_rate);
 
     let mut result: Vec<(HumanAddr, Uint256)> = vec![];
     for (i, collateral) in collaterals.iter().enumerate() {
@@ -93,17 +101,16 @@ pub fn query_liquidation_amount<S: Storage, A: Api, Q: Querier>(
             let prev_x = x;
             let prev_g_x = g_x;
 
-            let discounted_price = price * (Decimal256::one() - premium_rate);
+            let discounted_price = price * (Decimal256::one() - premium_rate) * base_fee_deductor;
             x += slot_available_bids / discounted_price;
 
             let safe_borrow = safe_ratio * collateral_borrow_limit;
-            let f_x = ((safe_ratio * max_ltv * price) * x) + collateral_borrow_amount - safe_borrow;
-
+            let f_x = ((safe_ratio * max_ltv * price) * x) + collateral_borrow_amount - safe_borrow + tax_cap_adj;
+            
             g_x += slot_available_bids;
 
             if g_x > f_x {
-                let nominator = collateral_borrow_amount - (safe_ratio * collateral_borrow_limit)
-                    + Uint256::one() // always try to overliquidate
+                let nominator = collateral_borrow_amount - safe_borrow + tax_cap_adj
                     + (discounted_price * prev_x)
                     - prev_g_x;
                 let denominator = price
