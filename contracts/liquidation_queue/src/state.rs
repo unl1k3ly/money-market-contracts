@@ -29,6 +29,7 @@ pub struct Config {
     pub price_timeframe: u64,
     pub waiting_period: u64,
     pub overseer: CanonicalAddr,
+    pub product_reset_threshold_exp: u64,
 }
 
 pub fn store_config<S: Storage>(storage: &mut S, config: &Config) -> StdResult<()> {

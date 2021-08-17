@@ -33,6 +33,7 @@ pub fn init<S: Storage, A: Api, Q: Querier>(
             price_timeframe: msg.price_timeframe,
             waiting_period: msg.waiting_period,
             overseer: deps.api.canonical_address(&msg.overseer)?,
+            product_reset_threshold_exp: msg.product_reset_threshold_exp,
         },
     )?;
 
@@ -56,6 +57,7 @@ pub fn handle<S: Storage, A: Api, Q: Querier>(
             price_timeframe,
             waiting_period,
             overseer,
+            product_reset_threshold_exp,
         } => update_config(
             deps,
             env,
@@ -68,6 +70,7 @@ pub fn handle<S: Storage, A: Api, Q: Querier>(
             price_timeframe,
             waiting_period,
             overseer,
+            product_reset_threshold_exp,
         ),
         HandleMsg::WhitelistCollateral {
             collateral_token,
@@ -112,7 +115,7 @@ pub fn receive_cw20<S: Storage, A: Api, Q: Querier>(
     if let Some(msg) = cw20_msg.msg.clone() {
         match from_binary(&msg)? {
             Cw20HookMsg::ExecuteBid {
-                liquidator: _, // ignored to not change legacy interface
+                liquidator: _, // ignored to not change legacy liquidation contract interface
                 repay_address,
                 fee_address,
             } => {
@@ -150,6 +153,7 @@ pub fn update_config<S: Storage, A: Api, Q: Querier>(
     price_timeframe: Option<u64>,
     waiting_period: Option<u64>,
     overseer: Option<HumanAddr>,
+    product_reset_threshold_exp: Option<u64>,
 ) -> HandleResult {
     let mut config: Config = read_config(&deps.storage)?;
     if deps.api.canonical_address(&env.message.sender)? != config.owner {
@@ -190,6 +194,10 @@ pub fn update_config<S: Storage, A: Api, Q: Querier>(
 
     if let Some(overseer) = overseer {
         config.overseer = deps.api.canonical_address(&overseer)?;
+    }
+
+    if let Some(product_reset_threshold_exp) = product_reset_threshold_exp {
+        config.product_reset_threshold_exp = product_reset_threshold_exp;
     }
 
     store_config(&mut deps.storage, &config)?;

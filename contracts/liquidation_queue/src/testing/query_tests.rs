@@ -31,6 +31,7 @@ fn query_liquidation_amount() {
         price_timeframe: 60u64,
         waiting_period: 60u64,
         overseer: HumanAddr::from("overseer0000"),
+        product_reset_threshold_exp: 2u64,
     };
 
     let env = mock_env("addr0000", &[]);
@@ -165,6 +166,7 @@ fn query_bids() {
         price_timeframe: 60u64,
         waiting_period: 60u64,
         overseer: HumanAddr::from("overseer0000"),
+        product_reset_threshold_exp: 2u64,
     };
 
     let env = mock_env("addr0000", &[]);
@@ -340,6 +342,7 @@ fn query_bid_pools() {
         price_timeframe: 60u64,
         waiting_period: 60u64,
         overseer: HumanAddr::from("overseer0000"),
+        product_reset_threshold_exp: 2u64,
     };
 
     let env = mock_env("addr0000", &[]);
@@ -489,6 +492,7 @@ fn query_collateral_info() {
         price_timeframe: 60u64,
         waiting_period: 60u64,
         overseer: HumanAddr::from("overseer0000"),
+        product_reset_threshold_exp: 2u64,
     };
 
     let env = mock_env("addr0000", &[]);

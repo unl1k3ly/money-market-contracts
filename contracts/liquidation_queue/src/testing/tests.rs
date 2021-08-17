@@ -25,6 +25,7 @@ fn proper_initialization() {
         price_timeframe: 60u64,
         waiting_period: 60u64,
         overseer: HumanAddr::from("overseer0000"),
+        product_reset_threshold_exp: 2u64,
     };
 
     let env = mock_env("addr0000", &[]);
@@ -47,6 +48,7 @@ fn proper_initialization() {
             price_timeframe: 60u64,
             waiting_period: 60u64,
             overseer: HumanAddr::from("overseer0000"),
+            product_reset_threshold_exp: 2u64,
         }
     );
 }
@@ -65,6 +67,7 @@ fn update_config() {
         price_timeframe: 60u64,
         waiting_period: 60u64,
         overseer: HumanAddr::from("overseer0000"),
+        product_reset_threshold_exp: 2u64,
     };
 
     let env = mock_env("addr0000", &[]);
@@ -82,6 +85,7 @@ fn update_config() {
         price_timeframe: None,
         waiting_period: None,
         overseer: None,
+        product_reset_threshold_exp: None,
     };
 
     let res = handle(&mut deps, env, msg).unwrap();
@@ -101,6 +105,7 @@ fn update_config() {
             price_timeframe: 60u64,
             waiting_period: 60u64,
             overseer: HumanAddr::from("overseer0000"),
+            product_reset_threshold_exp: 2u64,
         }
     );
 
@@ -116,6 +121,7 @@ fn update_config() {
         price_timeframe: Some(120u64),
         waiting_period: Some(100u64),
         overseer: Some(HumanAddr::from("overseer0001")),
+        product_reset_threshold_exp: Some(3u64),
     };
 
     let res = handle(&mut deps, env, msg).unwrap();
@@ -135,6 +141,7 @@ fn update_config() {
             price_timeframe: 120u64,
             waiting_period: 100u64,
             overseer: HumanAddr::from("overseer0001"),
+            product_reset_threshold_exp: 3u64,
         }
     );
 
@@ -150,6 +157,7 @@ fn update_config() {
         price_timeframe: Some(100u64),
         waiting_period: Some(100u64),
         overseer: Some(HumanAddr::from("overseer0001")),
+        product_reset_threshold_exp: Some(2u64),
     };
 
     let err = handle(&mut deps, env, msg).unwrap_err();
@@ -170,6 +178,7 @@ fn submit_bid() {
         price_timeframe: 60u64,
         waiting_period: 60u64,
         overseer: HumanAddr::from("overseer0000"),
+        product_reset_threshold_exp: 2u64,
     };
 
     let env = mock_env("addr0000", &[]);
@@ -247,6 +256,7 @@ fn activate_bid() {
         price_timeframe: 60u64,
         waiting_period: 60u64,
         overseer: HumanAddr::from("overseer0000"),
+        product_reset_threshold_exp: 2u64,
     };
 
     let env = mock_env("addr0000", &[]);
@@ -335,6 +345,7 @@ fn retract_bid() {
         price_timeframe: 60u64,
         waiting_period: 60u64,
         overseer: HumanAddr::from("overseer0000"),
+        product_reset_threshold_exp: 2u64,
     };
 
     let env = mock_env("addr0000", &[]);
@@ -403,6 +414,7 @@ fn retract_unactive_bid() {
         price_timeframe: 60u64,
         waiting_period: 60u64,
         overseer: HumanAddr::from("overseer0000"),
+        product_reset_threshold_exp: 2u64,
     };
 
     let env = mock_env("addr0000", &[]);
@@ -475,6 +487,7 @@ fn execute_bid() {
         price_timeframe: 100000u64,
         waiting_period: 60u64,
         overseer: HumanAddr::from("overseer0000"),
+        product_reset_threshold_exp: 2u64,
     };
 
     let env = mock_env("addr0000", &[]);
@@ -625,6 +638,7 @@ fn claim_liquidations() {
         price_timeframe: 1000000u64,
         waiting_period: 60u64,
         overseer: HumanAddr::from("overseer0000"),
+        product_reset_threshold_exp: 2u64,
     };
 
     let env = mock_env("addr0000", &[]);
@@ -713,6 +727,7 @@ fn update_collateral_info() {
         price_timeframe: 60u64,
         waiting_period: 60u64,
         overseer: HumanAddr::from("overseer0000"),
+        product_reset_threshold_exp: 2u64,
     };
 
     let env = mock_env("addr0000", &[]);

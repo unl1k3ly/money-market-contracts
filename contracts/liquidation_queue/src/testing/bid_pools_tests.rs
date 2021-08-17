@@ -26,6 +26,7 @@ fn one_bidder_distribution() {
         price_timeframe: 60u64,
         waiting_period: 60u64,
         overseer: HumanAddr::from("overseer0000"),
+        product_reset_threshold_exp: 2u64,
     };
 
     let env = mock_env("addr0000", &[]);
@@ -133,6 +134,7 @@ fn two_bidder_distribution() {
         price_timeframe: 101u64,
         waiting_period: 60u64,
         overseer: HumanAddr::from("overseer0000"),
+        product_reset_threshold_exp: 2u64,
     };
 
     let env = mock_env("addr0000", &[]);
@@ -306,6 +308,7 @@ fn two_bidder_distribution_big_numbers() {
         price_timeframe: 101u64,
         waiting_period: 60u64,
         overseer: HumanAddr::from("overseer0000"),
+        product_reset_threshold_exp: 2u64,
     };
 
     let env = mock_env("addr0000", &[]);
@@ -487,6 +490,7 @@ fn one_user_two_bid_slots() {
         price_timeframe: 10u64,
         waiting_period: 60u64,
         overseer: HumanAddr::from("overseer0000"),
+        product_reset_threshold_exp: 2u64,
     };
 
     let env = mock_env("addr0000", &[]);
@@ -646,6 +650,7 @@ fn partial_withdraw_after_execution() {
         price_timeframe: 101u64,
         waiting_period: 60u64,
         overseer: HumanAddr::from("overseer0000"),
+        product_reset_threshold_exp: 2u64,
     };
 
     let env = mock_env("addr0000", &[]);
@@ -838,6 +843,7 @@ fn completely_empty_pool() {
         price_timeframe: 101u64,
         waiting_period: 60u64,
         overseer: HumanAddr::from("overseer0000"),
+        product_reset_threshold_exp: 2u64,
     };
 
     let env = mock_env("addr0000", &[]);
@@ -1010,6 +1016,7 @@ fn product_truncated_to_zero() {
         price_timeframe: 101u64,
         waiting_period: 60u64,
         overseer: HumanAddr::from("overseer0000"),
+        product_reset_threshold_exp: 0u64,
     };
 
     let env = mock_env("addr0000", &[]);
@@ -1078,7 +1085,7 @@ fn product_truncated_to_zero() {
         vec![
             log("action", "claim_liquidations"),
             log("collateral_token", "col0000"),
-            log("collateral_amount", "7999999990"), // real expected 7999999992, missing 2uCol because as product gets smaller might loose some precision, but favor the system anyways
+            log("collateral_amount", "7999999990"), // 999999999 * 8 = 7,999,999,992 missing 2ucol due to product resolution
         ]
     );
 
@@ -1110,10 +1117,8 @@ fn product_truncated_to_zero() {
     );
 }
 
-// New Tests
-
 #[test]
-// Test 1 
+// Test 1
 // Two bidder reward distribution on a common slot
 
 fn two_bidder_reward_distribution_common_slot() {
@@ -1132,6 +1137,7 @@ fn two_bidder_reward_distribution_common_slot() {
         price_timeframe: 101u64,
         waiting_period: 60u64,
         overseer: HumanAddr::from("overseer0000"),
+        product_reset_threshold_exp: 2u64,
     };
 
     // 10 ust/col
@@ -1197,7 +1203,7 @@ fn two_bidder_reward_distribution_common_slot() {
     handle(&mut deps, env, msg).unwrap();
 
     // EXECUTE 10 COL AT  9.5 UST/COL
-    //  Executed col: 10 
+    //  Executed col: 10
     //  Spent: 95 ust
     let env = mock_env("col0000", &[]);
     let msg = HandleMsg::Receive(Cw20ReceiveMsg {
@@ -1216,8 +1222,8 @@ fn two_bidder_reward_distribution_common_slot() {
 
     // ALICE:
     //      SPENT: 95 / 2 = 47.5 ust
-    //      CLAIM: 5 col 
-    //      WITHDRAW: 100 - 47.5 = 52.5 ust 
+    //      CLAIM: 5 col
+    //      WITHDRAW: 100 - 47.5 = 52.5 ust
     let msg = HandleMsg::ClaimLiquidations {
         collateral_token: HumanAddr::from("col0000"),
         bids_idx: None,
@@ -1234,7 +1240,7 @@ fn two_bidder_reward_distribution_common_slot() {
     );
     let msg = HandleMsg::RetractBid {
         bid_idx: Uint128::from(1u128),
-        amount: Some(Uint256::from(52u64)), 
+        amount: Some(Uint256::from(52u64)),
     };
     let res = handle(&mut deps, env.clone(), msg.clone()).unwrap();
     assert_eq!(
@@ -1249,7 +1255,7 @@ fn two_bidder_reward_distribution_common_slot() {
     // BOB:
     //      SPENT: 95 / 2 = 47.5 UST
     //      CLAIM: 5 col
-    //      WITHDRAW: 100 - 47.5 = 52.5 UST 
+    //      WITHDRAW: 100 - 47.5 = 52.5 UST
     let msg = HandleMsg::ClaimLiquidations {
         collateral_token: HumanAddr::from("col0000"),
         bids_idx: None,
@@ -1270,15 +1276,14 @@ fn two_bidder_reward_distribution_common_slot() {
     };
     let res = handle(&mut deps, env.clone(), msg.clone()).unwrap();
     assert_eq!(
-        res.log, 
+        res.log,
         vec![
             log("action", "retract_bid"),
             log("bid_idx", "2"),
-            log("amount", "53"), 
+            log("amount", "53"),
         ]
     );
 }
-
 
 #[test]
 // Test 2: two bidder reward distribution on multiple common slots
@@ -1292,49 +1297,50 @@ fn two_bidder_distribution_multiple_common_slots() {
         owner: HumanAddr::from("owner0000"),
         oracle_contract: HumanAddr::from("oracle0000"),
         stable_denom: "uusd".to_string(),
-        safe_ratio: Decimal256::percent(10), 
+        safe_ratio: Decimal256::percent(10),
         bid_fee: Decimal256::percent(1),
         liquidation_threshold: Uint256::from(100000000u64),
-        price_timeframe: 60u64, 
+        price_timeframe: 60u64,
         waiting_period: 60u64,
         overseer: HumanAddr::from("overseer0000"),
+        product_reset_threshold_exp: 2u64,
     };
 
-    let env = mock_env("addr0000", &[]); 
-    deps.querier.with_oracle_price(&[( 
+    let env = mock_env("addr0000", &[]);
+    deps.querier.with_oracle_price(&[(
         &("col0000".to_string(), "uusd".to_string()),
         &(Decimal256::percent(200), env.block.time, env.block.time),
-    )]);  
+    )]);
 
-    let _res = init(&mut deps, env, msg).unwrap(); 
+    let _res = init(&mut deps, env, msg).unwrap();
 
-    let msg = HandleMsg::WhitelistCollateral { 
+    let msg = HandleMsg::WhitelistCollateral {
         collateral_token: HumanAddr::from("col0000"),
         max_slot: 30u8,
         bid_threshold: Uint256::zero(),
         premium_rate_per_slot: Decimal256::percent(1),
     };
-    
-    let env = mock_env("owner0000", &[]);
-    handle(&mut deps, env, msg).unwrap(); 
 
-    // Alice BIDS 100 UST to 5% pool 
+    let env = mock_env("owner0000", &[]);
+    handle(&mut deps, env, msg).unwrap();
+
+    // Alice BIDS 100 UST to 5% pool
     let msg = HandleMsg::SubmitBid {
         collateral_token: HumanAddr::from("col0000"),
         premium_slot: 5u8,
     };
 
-    let env = mock_env( 
+    let env = mock_env(
         "alice0000",
         &[Coin {
             denom: "uusd".to_string(),
-            amount: Uint128::from(100u128), 
+            amount: Uint128::from(100u128),
         }],
     );
 
     let wait_end = env.block.time + 60u64;
-    handle(&mut deps, env, msg).unwrap(); 
-    
+    handle(&mut deps, env, msg).unwrap();
+
     let msg = HandleMsg::ActivateBids {
         collateral_token: HumanAddr::from("col0000"),
         bids_idx: Some(vec![Uint128::from(1u128)]),
@@ -1342,17 +1348,17 @@ fn two_bidder_distribution_multiple_common_slots() {
     let env = mock_env_with_block_time("alice0000", &[], wait_end);
     handle(&mut deps, env, msg).unwrap();
 
-    // BOB BIDS 100 UST TO THE 5% POOL 
+    // BOB BIDS 100 UST TO THE 5% POOL
     let msg = HandleMsg::SubmitBid {
         collateral_token: HumanAddr::from("col0000"),
-        premium_slot: 5u8
+        premium_slot: 5u8,
     };
 
-    let env = mock_env( 
+    let env = mock_env(
         "bob0000",
         &[Coin {
             denom: "uusd".to_string(),
-            amount: Uint128::from(100u128), 
+            amount: Uint128::from(100u128),
         }],
     );
 
@@ -1371,39 +1377,39 @@ fn two_bidder_distribution_multiple_common_slots() {
         premium_slot: 10u8,
     };
 
-    let env = mock_env( 
+    let env = mock_env(
         "alice0000",
         &[Coin {
             denom: "uusd".to_string(),
-            amount: Uint128::from(200u128), 
+            amount: Uint128::from(200u128),
         }],
     );
     let wait_end = env.block.time + 60u64;
-    handle(&mut deps, env, msg).unwrap(); 
+    handle(&mut deps, env, msg).unwrap();
 
     let msg = HandleMsg::ActivateBids {
         collateral_token: HumanAddr::from("col0000"),
-        bids_idx: Some(vec![Uint128::from(3u128)]), 
+        bids_idx: Some(vec![Uint128::from(3u128)]),
     };
 
     let env = mock_env_with_block_time("alice0000", &[], wait_end);
-    handle(&mut deps, env, msg).unwrap(); 
+    handle(&mut deps, env, msg).unwrap();
 
-    // Bob Bids 200 UST to 10% pool 
+    // Bob Bids 200 UST to 10% pool
     let msg = HandleMsg::SubmitBid {
         collateral_token: HumanAddr::from("col0000"),
         premium_slot: 10u8,
     };
 
-    let env = mock_env( 
+    let env = mock_env(
         "bob0000",
         &[Coin {
             denom: "uusd".to_string(),
-            amount: Uint128::from(200u128), 
+            amount: Uint128::from(200u128),
         }],
     );
     let wait_end = env.block.time + 60u64;
-    handle(&mut deps, env, msg).unwrap(); 
+    handle(&mut deps, env, msg).unwrap();
 
     let msg = HandleMsg::ActivateBids {
         collateral_token: HumanAddr::from("col0000"),
@@ -1411,14 +1417,14 @@ fn two_bidder_distribution_multiple_common_slots() {
     };
 
     let env = mock_env_with_block_time("bob0000", &[], wait_end);
-    handle(&mut deps, env, msg).unwrap(); 
+    handle(&mut deps, env, msg).unwrap();
 
-    // 5% pool: Executes 10 collaterals at 9.5 ust/col 
+    // 5% pool: Executes 10 collaterals at 9.5 ust/col
     //  Executed Collateral: 10 col
     //  Total spent: 95 ust
-    let env = mock_env_with_block_time("col0000", &[], 101u64); 
+    let env = mock_env_with_block_time("col0000", &[], 101u64);
     let msg = HandleMsg::Receive(Cw20ReceiveMsg {
-        sender: HumanAddr::from("addr0001"), 
+        sender: HumanAddr::from("addr0001"),
         amount: Uint128::from(10u128),
         msg: Some(
             to_binary(&Cw20HookMsg::ExecuteBid {
@@ -1429,13 +1435,13 @@ fn two_bidder_distribution_multiple_common_slots() {
             .unwrap(),
         ),
     });
-    handle(&mut deps, env.clone(), msg).unwrap(); 
+    handle(&mut deps, env.clone(), msg).unwrap();
 
-    // 10% pool: executes 22 collaterals at 9 ust/col 
-    //  Executed Collateral: 22 
+    // 10% pool: executes 22 collaterals at 9 ust/col
+    //  Executed Collateral: 22
     //  Total Spent: 198 ust
     let msg = HandleMsg::Receive(Cw20ReceiveMsg {
-        sender: HumanAddr::from("addr0001"), 
+        sender: HumanAddr::from("addr0001"),
         amount: Uint128::from(22u128),
         msg: Some(
             to_binary(&Cw20HookMsg::ExecuteBid {
@@ -1446,33 +1452,32 @@ fn two_bidder_distribution_multiple_common_slots() {
             .unwrap(),
         ),
     });
-    handle(&mut deps, env.clone(), msg).unwrap(); 
-  
+    handle(&mut deps, env.clone(), msg).unwrap();
 
     // bidders claiming the collaterals
     //  Alice: 5 col from the 5% pool, 11 col from the 10% pool
-    //  Bob: 5 col from the 5% pool, 11 col from the 10% pool 
+    //  Bob: 5 col from the 5% pool, 11 col from the 10% pool
 
     // ALICE LIQUIDATION CLAIM
     let msg = HandleMsg::ClaimLiquidations {
         collateral_token: HumanAddr::from("col0000"),
-        bids_idx: Some(vec![Uint128::from(1u128)]), 
+        bids_idx: Some(vec![Uint128::from(1u128)]),
     };
 
-    let env = mock_env_with_block_time("alice0000", &[], 101u64); 
+    let env = mock_env_with_block_time("alice0000", &[], 101u64);
     let res = handle(&mut deps, env.clone(), msg).unwrap();
     assert_eq!(
         res.log,
         vec![
             log("action", "claim_liquidations"),
             log("collateral_token", "col0000"),
-            log("collateral_amount", "15"), 
+            log("collateral_amount", "15"),
         ]
     );
 
     let msg = HandleMsg::ClaimLiquidations {
         collateral_token: HumanAddr::from("col0000"),
-        bids_idx: Some(vec![Uint128::from(3u128)]), 
+        bids_idx: Some(vec![Uint128::from(3u128)]),
     };
     let res = handle(&mut deps, env.clone(), msg).unwrap();
     assert_eq!(
@@ -1480,28 +1485,28 @@ fn two_bidder_distribution_multiple_common_slots() {
         vec![
             log("action", "claim_liquidations"),
             log("collateral_token", "col0000"),
-            log("collateral_amount", "0"),  
+            log("collateral_amount", "0"),
         ]
     );
 
     // BOB LIQUIDATION CLAIM
     let msg = HandleMsg::ClaimLiquidations {
         collateral_token: HumanAddr::from("col0000"),
-        bids_idx: Some(vec![Uint128::from(2u128)]), 
+        bids_idx: Some(vec![Uint128::from(2u128)]),
     };
-    let env = mock_env_with_block_time("bob0000", &[], 101u64); 
+    let env = mock_env_with_block_time("bob0000", &[], 101u64);
     let res = handle(&mut deps, env.clone(), msg).unwrap();
     assert_eq!(
         res.log,
         vec![
             log("action", "claim_liquidations"),
             log("collateral_token", "col0000"),
-            log("collateral_amount", "16"), 
+            log("collateral_amount", "16"),
         ]
     );
     let msg = HandleMsg::ClaimLiquidations {
         collateral_token: HumanAddr::from("col0000"),
-        bids_idx: Some(vec![Uint128::from(4u128)]), 
+        bids_idx: Some(vec![Uint128::from(4u128)]),
     };
     let res = handle(&mut deps, env, msg).unwrap();
     assert_eq!(
@@ -1509,14 +1514,14 @@ fn two_bidder_distribution_multiple_common_slots() {
         vec![
             log("action", "claim_liquidations"),
             log("collateral_token", "col0000"),
-            log("collateral_amount", "0"), 
+            log("collateral_amount", "0"),
         ]
     );
 
     // RetractBid Withdrawal Claims
     //  Alice: 2.5 ust from the 5% pool, 1 ust from the 10% pool
-    //  Bob: 2.5 ust from the 5% pool, 1 ust from the 10% pool 
- 
+    //  Bob: 2.5 ust from the 5% pool, 1 ust from the 10% pool
+
     // ALICE WITHDRAWALS from bid_idx 1, 3
     let env = mock_env("alice0000", &[]);
 
@@ -1548,7 +1553,6 @@ fn two_bidder_distribution_multiple_common_slots() {
             log("amount", "1"),
         ]
     );
-
 
     // BOB WITHDRAWALS from bid_idx 2, 4
     let env = mock_env("bob0000", &[]);
@@ -1582,11 +1586,9 @@ fn two_bidder_distribution_multiple_common_slots() {
     );
 }
 
-
-
 #[test]
-// Test 3 
-// two bidder unequal deposit reward distribution on a common slot 
+// Test 3
+// two bidder unequal deposit reward distribution on a common slot
 fn two_bidder_unequal_deposit_reward_distribution() {
     let mut deps = mock_dependencies(20, &[]);
     deps.querier.with_tax(
@@ -1603,6 +1605,7 @@ fn two_bidder_unequal_deposit_reward_distribution() {
         price_timeframe: 101u64,
         waiting_period: 60u64,
         overseer: HumanAddr::from("overseer0000"),
+        product_reset_threshold_exp: 2u64,
     };
 
     // 2 ust/col
@@ -1668,7 +1671,7 @@ fn two_bidder_unequal_deposit_reward_distribution() {
     handle(&mut deps, env, msg).unwrap();
 
     // EXECUTE 51 COL AT  1.96 UST/COL
-    //  Executed col: 51 
+    //  Executed col: 51
     //  Spent: 99.96
     let env = mock_env("col0000", &[]);
     let msg = HandleMsg::Receive(Cw20ReceiveMsg {
@@ -1692,7 +1695,7 @@ fn two_bidder_unequal_deposit_reward_distribution() {
     // BOB:
     //      STAKE: 4/7
     //      Reward: 51 * 4/7 = 29.1428...
-    //      CLAIM: ??? 
+    //      CLAIM: ???
     // WITHDRAWAL:
     //      Remaining bid pool: 350 - 99.96 = 250.04
     //      ALICE: 250.04 * 3/7 = 107.16
@@ -1715,7 +1718,7 @@ fn two_bidder_unequal_deposit_reward_distribution() {
     );
     let msg = HandleMsg::RetractBid {
         bid_idx: Uint128::from(1u128),
-        amount: Some(Uint256::from(107u64)), 
+        amount: Some(Uint256::from(107u64)),
     };
     let res = handle(&mut deps, env.clone(), msg.clone()).unwrap();
     assert_eq!(
@@ -1739,7 +1742,7 @@ fn two_bidder_unequal_deposit_reward_distribution() {
         vec![
             log("action", "claim_liquidations"),
             log("collateral_token", "col0000"),
-            log("collateral_amount", "29"), 
+            log("collateral_amount", "29"),
         ]
     );
     let msg = HandleMsg::RetractBid {
@@ -1748,14 +1751,13 @@ fn two_bidder_unequal_deposit_reward_distribution() {
     };
     let res = handle(&mut deps, env.clone(), msg.clone()).unwrap();
     assert_eq!(
-        res.log, 
+        res.log,
         vec![
             log("action", "retract_bid"),
             log("bid_idx", "2"),
-            log("amount", "143"), 
+            log("amount", "143"),
         ]
     );
-
 }
 
 // Test 4 Scalable Reward distribution after multiple liquidation events with changing stakes
@@ -1770,49 +1772,50 @@ fn scalable_reward_distribution_after_multiple_liquidations() {
         owner: HumanAddr::from("owner0000"),
         oracle_contract: HumanAddr::from("oracle0000"),
         stable_denom: "uusd".to_string(),
-        safe_ratio: Decimal256::percent(10), 
+        safe_ratio: Decimal256::percent(10),
         bid_fee: Decimal256::percent(1),
         liquidation_threshold: Uint256::from(100000000u64),
         price_timeframe: 60u64,
         waiting_period: 60u64,
         overseer: HumanAddr::from("overseer0000"),
+        product_reset_threshold_exp: 2u64,
     };
 
-    let env = mock_env("addr0000", &[]); 
-    deps.querier.with_oracle_price(&[( 
+    let env = mock_env("addr0000", &[]);
+    deps.querier.with_oracle_price(&[(
         &("col0000".to_string(), "uusd".to_string()),
         &(Decimal256::percent(200), env.block.time, env.block.time),
-    )]);  
+    )]);
 
-    let _res = init(&mut deps, env, msg).unwrap(); 
+    let _res = init(&mut deps, env, msg).unwrap();
 
-    let msg = HandleMsg::WhitelistCollateral { 
+    let msg = HandleMsg::WhitelistCollateral {
         collateral_token: HumanAddr::from("col0000"),
         max_slot: 30u8,
         bid_threshold: Uint256::zero(),
-        premium_rate_per_slot: Decimal256::percent(1), 
+        premium_rate_per_slot: Decimal256::percent(1),
     };
-    
+
     let env = mock_env("owner0000", &[]);
     handle(&mut deps, env, msg).unwrap();
 
-    // ALICE BIDS 50 UST TO 10% POOL 
+    // ALICE BIDS 50 UST TO 10% POOL
     let msg = HandleMsg::SubmitBid {
         collateral_token: HumanAddr::from("col0000"),
         premium_slot: 10u8,
     };
 
-    let env = mock_env( 
+    let env = mock_env(
         "alice0000",
         &[Coin {
             denom: "uusd".to_string(),
-            amount: Uint128::from(50u128), 
+            amount: Uint128::from(50u128),
         }],
     );
 
     let wait_end = env.block.time + 60u64;
     handle(&mut deps, env, msg).unwrap();
-    
+
     let msg = HandleMsg::ActivateBids {
         collateral_token: HumanAddr::from("col0000"),
         bids_idx: Some(vec![Uint128::from(1u128)]),
@@ -1823,14 +1826,14 @@ fn scalable_reward_distribution_after_multiple_liquidations() {
     // BOB BIDS 100 UST TO 10% POOL
     let msg = HandleMsg::SubmitBid {
         collateral_token: HumanAddr::from("col0000"),
-        premium_slot: 10u8
+        premium_slot: 10u8,
     };
 
-    let env = mock_env( 
+    let env = mock_env(
         "bob0000",
         &[Coin {
             denom: "uusd".to_string(),
-            amount: Uint128::from(100u128), 
+            amount: Uint128::from(100u128),
         }],
     );
 
@@ -1849,31 +1852,31 @@ fn scalable_reward_distribution_after_multiple_liquidations() {
         premium_slot: 10u8,
     };
 
-    let env = mock_env( 
+    let env = mock_env(
         "john0000",
         &[Coin {
             denom: "uusd".to_string(),
-            amount: Uint128::from(100u128), 
+            amount: Uint128::from(100u128),
         }],
     );
     let wait_end = env.block.time + 60u64;
-    handle(&mut deps, env, msg).unwrap(); 
+    handle(&mut deps, env, msg).unwrap();
 
     let msg = HandleMsg::ActivateBids {
         collateral_token: HumanAddr::from("col0000"),
-        bids_idx: Some(vec![Uint128::from(3u128)]), 
+        bids_idx: Some(vec![Uint128::from(3u128)]),
     };
 
     let env = mock_env_with_block_time("john0000", &[], wait_end);
-    handle(&mut deps, env, msg).unwrap(); 
+    handle(&mut deps, env, msg).unwrap();
 
     // FIRST LIQUIDATION EVENT
-    // 10% POOL: 
+    // 10% POOL:
     //      Executed collaterals: 100
 
-    let env = mock_env_with_block_time("col0000", &[], 101u64); 
+    let env = mock_env_with_block_time("col0000", &[], 101u64);
     let msg = HandleMsg::Receive(Cw20ReceiveMsg {
-        sender: HumanAddr::from("addr0001"), 
+        sender: HumanAddr::from("addr0001"),
         amount: Uint128::from(100u128),
         msg: Some(
             to_binary(&Cw20HookMsg::ExecuteBid {
@@ -1884,35 +1887,35 @@ fn scalable_reward_distribution_after_multiple_liquidations() {
             .unwrap(),
         ),
     });
-    handle(&mut deps, env.clone(), msg).unwrap(); 
+    handle(&mut deps, env.clone(), msg).unwrap();
 
     // ALICE DOES NOT MAKE ANY ADDITIONAL DEPOSITS AT THIS POINT
 
     // BOB AND JOHN EACH ADDS 250 UST TO THE 10% POOL
 
     // BOB BIDS 250 UST TO 10% POOL
-       let msg = HandleMsg::SubmitBid {
+    let msg = HandleMsg::SubmitBid {
         collateral_token: HumanAddr::from("col0000"),
         premium_slot: 10u8,
     };
 
-    let env = mock_env( 
+    let env = mock_env(
         "bob0000",
         &[Coin {
             denom: "uusd".to_string(),
-            amount: Uint128::from(250u128), 
+            amount: Uint128::from(250u128),
         }],
     );
     let wait_end = env.block.time + 60u64;
-    handle(&mut deps, env, msg).unwrap(); 
+    handle(&mut deps, env, msg).unwrap();
 
     let msg = HandleMsg::ActivateBids {
         collateral_token: HumanAddr::from("col0000"),
-        bids_idx: Some(vec![Uint128::from(4u128)]), 
+        bids_idx: Some(vec![Uint128::from(4u128)]),
     };
 
     let env = mock_env_with_block_time("bob0000", &[], wait_end);
-    handle(&mut deps, env, msg).unwrap(); 
+    handle(&mut deps, env, msg).unwrap();
 
     // JOHN BIDS 250 UST TO 10% POOL
     let msg = HandleMsg::SubmitBid {
@@ -1920,30 +1923,30 @@ fn scalable_reward_distribution_after_multiple_liquidations() {
         premium_slot: 10u8,
     };
 
-    let env = mock_env( 
+    let env = mock_env(
         "john0000",
         &[Coin {
             denom: "uusd".to_string(),
-            amount: Uint128::from(250u128), 
+            amount: Uint128::from(250u128),
         }],
     );
     let wait_end = env.block.time + 60u64;
-    handle(&mut deps, env, msg).unwrap(); 
+    handle(&mut deps, env, msg).unwrap();
 
     let msg = HandleMsg::ActivateBids {
         collateral_token: HumanAddr::from("col0000"),
-        bids_idx: Some(vec![Uint128::from(5u128)]), 
+        bids_idx: Some(vec![Uint128::from(5u128)]),
     };
 
     let env = mock_env_with_block_time("john0000", &[], wait_end);
-    handle(&mut deps, env, msg).unwrap(); 
+    handle(&mut deps, env, msg).unwrap();
 
     // SECOND LIQUIDATION EVENT
     // 10% POOL
     //      Executed collaterals: 50
     let env = mock_env("col0000", &[]);
     let msg = HandleMsg::Receive(Cw20ReceiveMsg {
-        sender: HumanAddr::from("addr0001"), 
+        sender: HumanAddr::from("addr0001"),
         amount: Uint128::from(50u128),
         msg: Some(
             to_binary(&Cw20HookMsg::ExecuteBid {
@@ -1954,36 +1957,35 @@ fn scalable_reward_distribution_after_multiple_liquidations() {
             .unwrap(),
         ),
     });
-    handle(&mut deps, env.clone(), msg).unwrap(); 
-
+    handle(&mut deps, env.clone(), msg).unwrap();
 
     // ALICE CLAIMS COLLATERALS AND RETRACTS BID
-    //  Alice's running sum of collateral reward: 21.1824 
-    //  Alice's remaining bid: 8.088 
+    //  Alice's running sum of collateral reward: 21.1824
+    //  Alice's remaining bid: 8.088
 
     // ALICE LIQUIDATION CLAIM
     let msg = HandleMsg::ClaimLiquidations {
         collateral_token: HumanAddr::from("col0000"),
-        bids_idx: None, 
+        bids_idx: None,
     };
 
-    let env = mock_env_with_block_time("alice0000", &[], 101u64); 
+    let env = mock_env_with_block_time("alice0000", &[], 101u64);
     let res = handle(&mut deps, env.clone(), msg).unwrap();
     assert_eq!(
         res.log,
         vec![
             log("action", "claim_liquidations"),
             log("collateral_token", "col0000"),
-            log("collateral_amount", "21"), 
+            log("collateral_amount", "21"),
         ]
     );
 
-    // ALICE WITHDRAWALS 
+    // ALICE WITHDRAWALS
     let env = mock_env("alice0000", &[]);
 
     let msg = HandleMsg::RetractBid {
-        bid_idx: Uint128::from(1u128), 
-        amount: Some(Uint256::from(8u128)), 
+        bid_idx: Uint128::from(1u128),
+        amount: Some(Uint256::from(8u128)),
     };
 
     let res = handle(&mut deps, env, msg).unwrap();
@@ -1995,9 +1997,7 @@ fn scalable_reward_distribution_after_multiple_liquidations() {
             log("amount", "8"),
         ]
     );
-
 }
-
 
 // Test 5 Not enough bid pool to liquidate all collateral
 //      Expected Behavior: Execute Liquidation returns an error if not all collateral was liquidated.
@@ -2018,6 +2018,7 @@ fn not_enough_bid_for_collateral() {
         price_timeframe: 101u64,
         waiting_period: 60u64,
         overseer: HumanAddr::from("overseer0000"),
+        product_reset_threshold_exp: 2u64,
     };
 
     let env = mock_env("addr0000", &[]);
@@ -2102,12 +2103,11 @@ fn not_enough_bid_for_collateral() {
     assert_eq!(
         res,
         StdError::generic_err("Not enough bids to execute this liquidation")
-    )  
+    )
 }
 
-
 #[test]
-// Test 6 
+// Test 6
 // Two bidder reward distribution on a common slot with large numbers
 fn two_bidder_reward_distribution_common_slot_large_numbers() {
     let mut deps = mock_dependencies(20, &[]);
@@ -2125,13 +2125,18 @@ fn two_bidder_reward_distribution_common_slot_large_numbers() {
         price_timeframe: 101u64,
         waiting_period: 60u64,
         overseer: HumanAddr::from("overseer0000"),
+        product_reset_threshold_exp: 2u64,
     };
 
     // 1000 ust/col
     let env = mock_env("addr0000", &[]);
     deps.querier.with_oracle_price(&[(
         &("col0000".to_string(), "uusd".to_string()),
-        &(Decimal256::percent(100000000000), env.block.time, env.block.time), // 1000 ust/col 
+        &(
+            Decimal256::percent(100000000000),
+            env.block.time,
+            env.block.time,
+        ), // 1000 ust/col
     )]);
 
     let _res = init(&mut deps, env, msg).unwrap();
@@ -2209,7 +2214,7 @@ fn two_bidder_reward_distribution_common_slot_large_numbers() {
 
     // ALICE:
     //      SPENT: 950 billion / 2 = 475 billion ust
-    //      CLAIM: 500 million col 
+    //      CLAIM: 500 million col
     //      WITHDRAW: 1.05 trillion / 2 = 0.525 billion = 525 million
     let msg = HandleMsg::ClaimLiquidations {
         collateral_token: HumanAddr::from("col0000"),
@@ -2241,7 +2246,7 @@ fn two_bidder_reward_distribution_common_slot_large_numbers() {
 
     // BOB:
     //      SPENT: 950 billion / 2 = 475 billion ust
-    //      CLAIM: 500 million col 
+    //      CLAIM: 500 million col
     //      WITHDRAW: 1.05 trillion / 2 = 0.525 billion = 525 million
     let msg = HandleMsg::ClaimLiquidations {
         collateral_token: HumanAddr::from("col0000"),
@@ -2263,13 +2268,11 @@ fn two_bidder_reward_distribution_common_slot_large_numbers() {
     };
     let res = handle(&mut deps, env.clone(), msg.clone()).unwrap();
     assert_eq!(
-        res.log, 
+        res.log,
         vec![
             log("action", "retract_bid"),
             log("bid_idx", "2"),
-            log("amount", "525000000"), 
+            log("amount", "525000000"),
         ]
     );
-  
-
 }

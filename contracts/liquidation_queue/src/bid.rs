@@ -4,6 +4,7 @@ use crate::state::{
     read_epoch_scale_sum, read_or_create_bid_pool, read_total_bids, remove_bid, store_bid,
     store_bid_pool, store_epoch_scale_sum, store_total_bids, Bid, BidPool, CollateralInfo, Config,
 };
+use bigint::U256;
 use cosmwasm_bignumber::{Decimal256, Uint256};
 use cosmwasm_std::{
     log, to_binary, Api, BankMsg, CanonicalAddr, Coin, CosmosMsg, Env, Extern, HandleResponse,
@@ -13,6 +14,8 @@ use cw20::Cw20HandleMsg;
 use moneymarket::oracle::PriceResponse;
 use moneymarket::querier::{deduct_tax, query_price, TimeConstraints};
 
+/// Stable asset is submitted to create a bid record. If available bids for the collateral is under
+/// the threshold, the bid is activated. Bids are not used for liquidations until activated
 pub fn submit_bid<S: Storage, A: Api, Q: Querier>(
     deps: &mut Extern<S, A, Q>,
     env: Env,
@@ -95,6 +98,8 @@ pub fn submit_bid<S: Storage, A: Api, Q: Querier>(
     })
 }
 
+/// After bids are submitted, need to execute the activation after wait_period expires
+/// Bids are not used for liquidations until activated
 pub fn activate_bids<S: Storage, A: Api, Q: Querier>(
     deps: &mut Extern<S, A, Q>,
     env: Env,
@@ -173,6 +178,7 @@ pub fn activate_bids<S: Storage, A: Api, Q: Querier>(
     })
 }
 
+/// Bid owners can withdraw the ramaning bid amount at any time
 pub fn retract_bid<S: Storage, A: Api, Q: Querier>(
     deps: &mut Extern<S, A, Q>,
     env: Env,
@@ -284,6 +290,9 @@ pub fn retract_bid<S: Storage, A: Api, Q: Querier>(
     })
 }
 
+/// Overseer executes the liquidation providing a whitelisted collateral.
+/// This operation returns a repay_amount based on the available bids on each
+/// premium slot, consuming bids from lowest to higher premium slots
 pub fn execute_liquidation<S: Storage, A: Api, Q: Querier>(
     deps: &mut Extern<S, A, Q>,
     env: Env,
@@ -331,6 +340,7 @@ pub fn execute_liquidation<S: Storage, A: Api, Q: Querier>(
             remaining_collateral_to_liquidate,
             price.rate,
             &mut filled,
+            config.product_reset_threshold_exp,
         )?;
 
         store_bid_pool(&mut deps.storage, &collateral_token_raw, slot, &bid_pool)?;
@@ -401,6 +411,8 @@ pub fn execute_liquidation<S: Storage, A: Api, Q: Querier>(
     })
 }
 
+/// Bid owner can claim their share of the liquidated collateral until the
+/// bid is consumed
 pub fn claim_liquidations<S: Storage, A: Api, Q: Querier>(
     deps: &mut Extern<S, A, Q>,
     env: Env,
@@ -508,6 +520,10 @@ fn process_bid_activation(bid: &mut Bid, bid_pool: &mut BidPool, amount: Uint256
     bid_pool.total_bid_amount += amount;
 }
 
+/// On each collateral execution the product_snapshot and sum_snapshot are updated
+/// to track the expense and reward distribution for biders in the pool
+/// More details:
+/// https://github.com/liquity/liquity/blob/master/papers/Scalable_Reward_Distribution_with_Compounding_Stakes.pdf
 fn execute_pool_liquidation<S: Storage>(
     storage: &mut S,
     bid_pool: &mut BidPool,
@@ -516,6 +532,7 @@ fn execute_pool_liquidation<S: Storage>(
     collateral_to_liquidate: Uint256,
     price: Decimal256,
     filled: &mut bool,
+    product_reset_threshold_exp: u64,
 ) -> StdResult<(Uint256, Uint256)> {
     let premium_price = price * (Decimal256::one() - bid_pool.premium_rate);
     let mut pool_collateral_to_liquidate = collateral_to_liquidate;
@@ -554,7 +571,7 @@ fn execute_pool_liquidation<S: Storage>(
         bid_pool.sum_snapshot,
     )?;
 
-    // Update product
+    ///////// Update product /////////
     // Check if the pool is emptied, if it is, reset (P = 1, S = 0)
     if expense_per_bid == Decimal256::one() {
         bid_pool.sum_snapshot = Decimal256::zero();
@@ -567,14 +584,17 @@ fn execute_pool_liquidation<S: Storage>(
         let product = Decimal256::one() - expense_per_bid;
 
         // check if scale needs to be increased (in case product truncates to zero)
-        // seems hard to test this, TODO: include this to be tested
         let new_product = bid_pool.product_snapshot * product;
-        bid_pool.product_snapshot = if new_product.is_zero() {
-            bid_pool.current_scale += Uint128::from(1u128);
-            Decimal256(bid_pool.product_snapshot.0 * Decimal256::DECIMAL_FRACTIONAL) * product
-        } else {
-            new_product
-        };
+        bid_pool.product_snapshot =
+            if new_product < Decimal256(U256::exp10(product_reset_threshold_exp as usize)) {
+                bid_pool.current_scale += Uint128::from(1u128);
+                Decimal256(
+                    bid_pool.product_snapshot.0
+                        * U256::exp10(18 - product_reset_threshold_exp as usize),
+                ) * product
+            } else {
+                new_product
+            };
     }
 
     Ok((pool_required_stable, pool_collateral_to_liquidate))

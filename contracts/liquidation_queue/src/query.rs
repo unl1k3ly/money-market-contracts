@@ -27,11 +27,18 @@ pub fn query_config<S: Storage, A: Api, Q: Querier>(
         price_timeframe: config.price_timeframe,
         waiting_period: config.waiting_period,
         overseer: deps.api.human_address(&config.overseer)?,
+        product_reset_threshold_exp: config.product_reset_threshold_exp,
     };
 
     Ok(resp)
 }
 
+/// The amount of collateral to be liquidated depends on the status of the bid pools
+/// for each collateral. To find out how much collateral should be liquidated
+/// we find the intersaction between f(x) and g(x); where x = liquidated collateral,
+/// f(x) determines liquidation amount at which the safe ratio is satisfied, and g(x) gives
+/// the repay amount based on the collateral being liquidated, which takes into account the
+/// available bids at different premium rates
 pub fn query_liquidation_amount<S: Storage, A: Api, Q: Querier>(
     deps: &Extern<S, A, Q>,
     borrow_amount: Uint256,
@@ -105,12 +112,14 @@ pub fn query_liquidation_amount<S: Storage, A: Api, Q: Querier>(
             x += slot_available_bids / discounted_price;
 
             let safe_borrow = safe_ratio * collateral_borrow_limit;
-            let f_x = ((safe_ratio * max_ltv * price) * x) + collateral_borrow_amount - safe_borrow + tax_cap_adj;
-            
+            let f_x = ((safe_ratio * max_ltv * price) * x) + collateral_borrow_amount - safe_borrow
+                + tax_cap_adj;
+
             g_x += slot_available_bids;
 
             if g_x > f_x {
-                let nominator = collateral_borrow_amount - safe_borrow + tax_cap_adj
+                let nominator = collateral_borrow_amount - safe_borrow
+                    + tax_cap_adj
                     + (discounted_price * prev_x)
                     - prev_g_x;
                 let denominator = price
@@ -140,6 +149,8 @@ pub fn query_liquidation_amount<S: Storage, A: Api, Q: Querier>(
     });
 }
 
+/// The portion of collateral that liquidated from the available set is calculated
+/// based on weight = min(collateral_value, available_bids) / max_ltv
 fn compute_collateral_weights<S: Storage, A: Api, Q: Querier>(
     deps: &Extern<S, A, Q>,
     overseer: &HumanAddr,

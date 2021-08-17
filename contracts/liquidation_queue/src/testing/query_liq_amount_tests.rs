@@ -28,6 +28,7 @@ fn partial_one_collateral_one_slot_high_ltv() {
         price_timeframe: 60u64,
         waiting_period: 60u64,
         overseer: HumanAddr::from("overseer0000"),
+        product_reset_threshold_exp: 2u64,
     };
 
     let env = mock_env("addr0000", &[]);
@@ -131,6 +132,7 @@ fn partial_one_collateral_one_slot() {
         price_timeframe: 60u64,
         waiting_period: 60u64,
         overseer: HumanAddr::from("overseer0000"),
+        product_reset_threshold_exp: 2u64,
     };
 
     let env = mock_env("addr0000", &[]);
@@ -234,6 +236,7 @@ fn partial_one_collateral_one_slot_with_fees() {
         price_timeframe: 60u64,
         waiting_period: 60u64,
         overseer: HumanAddr::from("overseer0000"),
+        product_reset_threshold_exp: 2u64,
     };
 
     let env = mock_env("addr0000", &[]);
@@ -347,6 +350,7 @@ fn partial_one_collateral_two_slots() {
         price_timeframe: 60u64,
         waiting_period: 60u64,
         overseer: HumanAddr::from("overseer0000"),
+        product_reset_threshold_exp: 2u64,
     };
 
     let env = mock_env("addr0000", &[]);
@@ -457,6 +461,7 @@ fn partial_one_collateral_two_slots_with_fees() {
         price_timeframe: 60u64,
         waiting_period: 60u64,
         overseer: HumanAddr::from("overseer0000"),
+        product_reset_threshold_exp: 2u64,
     };
 
     let env = mock_env("addr0000", &[]);
@@ -577,6 +582,7 @@ fn non_partial_liquidation() {
         price_timeframe: 60u64,
         waiting_period: 60u64,
         overseer: HumanAddr::from("overseer0000"),
+        product_reset_threshold_exp: 2u64,
     };
 
     let env = mock_env("addr0000", &[]);
@@ -673,6 +679,7 @@ fn non_partial_liquidation_two_slots() {
         price_timeframe: 60u64,
         waiting_period: 60u64,
         overseer: HumanAddr::from("overseer0000"),
+        product_reset_threshold_exp: 2u64,
     };
 
     let env = mock_env("addr0000", &[]);
@@ -774,6 +781,7 @@ fn non_partial_liquidation_with_fees() {
         price_timeframe: 60u64,
         waiting_period: 60u64,
         overseer: HumanAddr::from("overseer0000"),
+        product_reset_threshold_exp: 2u64,
     };
 
     let env = mock_env("addr0000", &[]);
@@ -880,6 +888,7 @@ fn non_partial_liquidation_two_slots_with_fees() {
         price_timeframe: 60u64,
         waiting_period: 60u64,
         overseer: HumanAddr::from("overseer0000"),
+        product_reset_threshold_exp: 2u64,
     };
 
     let env = mock_env("addr0000", &[]);
@@ -991,6 +1000,7 @@ fn non_partial_liquidation_two_slots_with_fees_big_nums() {
         price_timeframe: 60u64,
         waiting_period: 60u64,
         overseer: HumanAddr::from("overseer0000"),
+        product_reset_threshold_exp: 2u64,
     };
 
     let env = mock_env("addr0000", &[]);
@@ -1104,6 +1114,7 @@ fn partial_two_collaterals_ltv_diff() {
         price_timeframe: 60u64,
         waiting_period: 60u64,
         overseer: HumanAddr::from("overseer0000"),
+        product_reset_threshold_exp: 2u64,
     };
 
     let env = mock_env("addr0000", &[]);
@@ -1265,6 +1276,7 @@ fn partial_two_collaterals_multi_slots_per_col() {
         price_timeframe: 60u64,
         waiting_period: 60u64,
         overseer: HumanAddr::from("overseer0000"),
+        product_reset_threshold_exp: 2u64,
     };
 
     let env = mock_env("addr0000", &[]);
@@ -1436,6 +1448,7 @@ fn partial_two_collaterals_one_slot_diff_ltv() {
         price_timeframe: 60u64,
         waiting_period: 60u64,
         overseer: HumanAddr::from("overseer0000"),
+        product_reset_threshold_exp: 2u64,
     };
 
     let env = mock_env("addr0000", &[]);
@@ -1598,6 +1611,7 @@ fn partial_three_collaterals_one_slot_diff_ltv() {
         price_timeframe: 60u64,
         waiting_period: 60u64,
         overseer: HumanAddr::from("overseer0000"),
+        product_reset_threshold_exp: 2u64,
     };
 
     let env = mock_env("addr0000", &[]);
@@ -1812,6 +1826,7 @@ fn partial_three_collaterals_one_slot_diff_ltv_big_amounts() {
         price_timeframe: 60u64,
         waiting_period: 60u64,
         overseer: HumanAddr::from("overseer0000"),
+        product_reset_threshold_exp: 2u64,
     };
 
     let env = mock_env("addr0000", &[]);
@@ -2031,6 +2046,7 @@ fn partial_three_collaterals_one_slot_diff_ltv_big_amounts_2() {
         price_timeframe: 60u64,
         waiting_period: 60u64,
         overseer: HumanAddr::from("overseer0000"),
+        product_reset_threshold_exp: 2u64,
     };
 
     let env = mock_env("addr0000", &[]);
@@ -2249,6 +2265,7 @@ fn not_enough_bids_for_one_of_two_col() {
         price_timeframe: 60u64,
         waiting_period: 60u64,
         overseer: HumanAddr::from("overseer0000"),
+        product_reset_threshold_exp: 2u64,
     };
 
     let env = mock_env("addr0000", &[]);
@@ -2415,7 +2432,6 @@ fn not_enough_bids_for_one_of_two_col() {
     );
 }
 
-
 #[test]
 fn integration_test_simul() {
     let mut deps = mock_dependencies(20, &[]);
@@ -2438,6 +2454,7 @@ fn integration_test_simul() {
         price_timeframe: 60u64,
         waiting_period: 60u64,
         overseer: HumanAddr::from("overseer0000"),
+        product_reset_threshold_exp: 2u64,
     };
 
     let env = mock_env("addr0000", &[]);
@@ -2494,9 +2511,7 @@ fn integration_test_simul() {
     assert_eq!(
         res,
         LiquidationAmountResponse {
-            collaterals: vec![
-                (HumanAddr::from("token0000"), Uint256::from(8489891541u64)),
-            ],
+            collaterals: vec![(HumanAddr::from("token0000"), Uint256::from(8489891541u64)),],
         }
     );
 
@@ -2506,13 +2521,11 @@ fn integration_test_simul() {
     // 1,510,108,459 * 0.9 * 0.6 * 0.8 = 652,366,854
 
     // 6000000000 - 5347633145 = 652,366,855
-                  
-    deps.querier.with_oracle_price(&[
-        (
-            &("token0000".to_string(), "uusd".to_string()),
-            &(Decimal256::percent(90), env.block.time, env.block.time),
-        ),
-    ]);
+
+    deps.querier.with_oracle_price(&[(
+        &("token0000".to_string(), "uusd".to_string()),
+        &(Decimal256::percent(90), env.block.time, env.block.time),
+    )]);
 
     let msg = HandleMsg::Receive(Cw20ReceiveMsg {
         sender: HumanAddr::from("addr0001"),
@@ -2531,15 +2544,13 @@ fn integration_test_simul() {
 
     assert_eq!(
         res.messages,
-        vec![
-            CosmosMsg::Bank(BankMsg::Send {
-                from_address: HumanAddr::from(MOCK_CONTRACT_ADDR),
-                to_address: HumanAddr::from("repay0000"),
-                amount: vec![Coin {
-                    denom: "uusd".to_string(),
-                    amount: Uint128::from(5347633145u128),
-                }]
-            }),
-        ]
+        vec![CosmosMsg::Bank(BankMsg::Send {
+            from_address: HumanAddr::from(MOCK_CONTRACT_ADDR),
+            to_address: HumanAddr::from("repay0000"),
+            amount: vec![Coin {
+                denom: "uusd".to_string(),
+                amount: Uint128::from(5347633145u128),
+            }]
+        }),]
     );
 }
