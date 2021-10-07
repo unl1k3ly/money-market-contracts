@@ -661,7 +661,7 @@ pub(crate) fn calculate_liquidated_collateral(
         bid.epoch_snapshot,
         bid.scale_snapshot + Uint128::from(1u128),
     ) {
-        Decimal256(second_scale_sum_snapshot.0 / Decimal256::DECIMAL_FRACTIONAL)
+        Decimal256((second_scale_sum_snapshot.0 - reference_sum_snapshot.0) / Decimal256::DECIMAL_FRACTIONAL)
     } else {
         Decimal256::zero()
     };

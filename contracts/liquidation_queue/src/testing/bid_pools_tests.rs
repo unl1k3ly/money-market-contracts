@@ -1057,7 +1057,7 @@ fn product_truncated_to_zero() {
         safe_ratio: Decimal256::percent(10),
         bid_fee: Decimal256::percent(1),
         liquidator_fee: Decimal256::percent(0),
-        liquidation_threshold: Uint256::from(100000000u64),
+        liquidation_threshold: Uint256::from(1000000000000000u64),
         price_timeframe: 101u64,
         waiting_period: 60u64,
         overseer: "overseer0000".to_string(),
@@ -1132,9 +1132,10 @@ fn product_truncated_to_zero() {
         vec![
             attr("action", "claim_liquidations"),
             attr("collateral_token", "col0000"),
-            attr("collateral_amount", "7999999990"), // 999999999 * 8 = 7,999,999,992 missing 2ucol due to product resolution
+            attr("collateral_amount", "7999999990"), // this assertion fails, it returns 6906051384 (1,093,948,606 difference)
         ]
     );
+    // with the suggested change, we are subtracting part of the reward information, resulting in a lot less collateral returned
 
     let bid_pool: BidPoolResponse = from_binary(
         &query(
